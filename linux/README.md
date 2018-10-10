@@ -186,4 +186,30 @@ WantedBy=multi-user.target
 
 ### Nginx
 
-#### 1
+#### 1. Weighted load balancer
+```
+upstream myapp1 {
+        server 192.168.0.10 weight=3;
+        server 192.168.0.111;
+        server 192.168.0.211;
+    }
+```
+
+#### 2. Redirect subnet requests
+```
+geo $geo {
+  default 0;
+  45.155.43.0/26 1;
+  89.34.22.128/29 1;
+}
+
+server {
+  if ($geo) {
+    rewrite ^ /restricted.html;
+  }
+}
+```
+
+To check if 1 works I would check the access logs of the backends and see if I'm getting 3 more times requests on the main one than on the second ones.
+
+To check if the rewriting rule is working I would add a rule containin a subnet from which I could issue a request. If I see the restricted.html page then I would infere that it's working properly.
