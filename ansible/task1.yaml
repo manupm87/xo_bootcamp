@@ -11,7 +11,7 @@
         key_name: my_key
         group: test
         instance_type: t2.micro
-        image: "{{ ami_id }}"
+        image: ami-dd3c0f36
         wait: true
         exact_count: 1
         count_tag:
