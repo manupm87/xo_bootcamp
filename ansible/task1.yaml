@@ -1,4 +1,3 @@
-# demo_setup.yml
 
 - hosts: localhost
   connection: local
@@ -6,16 +5,63 @@
 
   tasks:
 
-    - name: Provision a set of instances
+    - name: Deploy web servers
       ec2:
-        key_name: my_key
-        group: test
+        key_name: manu-fedora-t480
+        group_id: sg-02a404b9419162add
         instance_type: t2.micro
         image: ami-dd3c0f36
         wait: true
-        exact_count: 1
+        exact_count: 2
+        region: eu-central-1
         count_tag:
           Name: Demo
         instance_tags:
+          Name: web
+        zone: eu-central-1a
+        assign_public_ip: yes
+        volumes:
+        - device_name: /dev/sda
+          volume_type: gp2
+          volume_size: 20
+      register: ec2
+    
+    - name: Deploy db servers
+      ec2:
+        key_name: manu-fedora-t480
+        group_id: sg-02a404b9419162add
+        instance_type: t2.micro
+        image: ami-dd3c0f36
+        wait: true
+        exact_count: 2
+        region: eu-central-1
+        count_tag:
           Name: Demo
+        instance_tags:
+          Name: web
+        zone: eu-central-1a
+        volumes:
+        - device_name: /dev/sda
+          volume_type: gp2
+          volume_size: 20
+      register: ec2
+
+    - name: Deploy backup servers
+      ec2:
+        key_name: manu-fedora-t480
+        group_id: sg-02a404b9419162add
+        instance_type: t2.micro
+        image: ami-dd3c0f36
+        wait: true
+        exact_count: 2
+        region: eu-central-1
+        count_tag:
+          Name: Demo
+        instance_tags:
+          Name: web
+        zone: eu-central-1a
+        volumes:
+        - device_name: /dev/sda
+          volume_type: gp2
+          volume_size: 20
       register: ec2
