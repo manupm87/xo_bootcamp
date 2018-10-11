@@ -19,9 +19,8 @@
         instance_tags:
           Name: web
         zone: eu-central-1a
-        assign_public_ip: yes
         volumes:
-        - device_name: /dev/sda
+        - device_name: /dev/xvda
           volume_type: gp2
           volume_size: 20
       register: ec2
@@ -41,7 +40,7 @@
           Name: web
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/sda
+        - device_name: /dev/xvda
           volume_type: gp2
           volume_size: 20
       register: ec2
@@ -61,7 +60,7 @@
           Name: web
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/sda
+        - device_name: /dev/xvda
           volume_type: gp2
           volume_size: 20
       register: ec2
