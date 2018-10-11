@@ -1,0 +1,10 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  tasks:
+  - ec2_instance:
+      state: absent
+      region: eu-central-1
+      filters:
+        instance-state-name: running

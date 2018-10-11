@@ -1,0 +1,69 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  tasks:
+    - name: Deploy test servers
+      ec2:
+        key_name: manu-fedora-t480
+        group_id: sg-02a404b9419162add
+        instance_type: t2.micro
+        image: ami-dd3c0f36
+        wait: true
+        count: 1
+        region: eu-central-1
+        instance_tags:
+          Name: test
+        zone: eu-central-1a
+        volumes:
+        - device_name: /dev/sda1
+          volume_type: gp2
+          volume_size: 10
+          delete_on_termination: true
+      register: test
+    
+    - name: Add test instances IPs to host group
+      add_host: hostname={{ item.public_ip }} groups=test
+      loop: "{{ test.instances }}"
+
+    - name: Stop test servers
+      ec2_instance:
+        state: stopped
+        region: eu-central-1
+        instance_ids:
+          - "{{ item.id }}"
+      loop: "{{ test.instances }}"
+
+    - name: Detach test volume
+      ec2_vol:
+        region: eu-central-1
+        id: "{{ item.block_device_mapping['/dev/sda1'].volume_id }}"
+        instance: None
+      loop: "{{ test.instances }}"
+        
+    - name: Create snapshot from volume
+      ec2_snapshot:
+        region: eu-central-1
+        volume_id: "{{ item.block_device_mapping['/dev/sda1'].volume_id }}"
+      loop: "{{ test.instances }}"
+      register: snap
+
+    - debug:
+        var: snap
+
+    - name: create bigger volume from snapshot
+      ec2_vol:
+        region: eu-central-1
+        snapshot: "{{ snap.results[0].item.snapshot_id }}"
+        volume_size: 30
+        instance: "{{ item.id }}"
+        device_name: /dev/sda1
+      loop: "{{ test.instances }}"
+
+    - name: restart test server
+      ec2_instance:
+        state: started
+        region: eu-central-1
+        instance_ids:
+          - "{{ item.id }}"
+      loop: "{{ test.instances }}"

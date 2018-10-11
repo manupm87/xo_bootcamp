@@ -12,18 +12,21 @@
         instance_type: t2.micro
         image: ami-dd3c0f36
         wait: true
-        exact_count: 2
+        count: 2
         region: eu-central-1
-        count_tag:
-          Name: Demo
         instance_tags:
           Name: web
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/xvda
+        - device_name: /dev/sda1
           volume_type: gp2
           volume_size: 20
-      register: ec2
+          delete_on_termination: true
+      register: web
+
+    - name: Add web instances IPs to host group
+      add_host: hostname={{ item.public_ip }} groups=web
+      loop: "{{ web.instances }}"
     
     - name: Deploy db servers
       ec2:
@@ -32,18 +35,21 @@
         instance_type: t2.micro
         image: ami-dd3c0f36
         wait: true
-        exact_count: 2
+        count: 2
         region: eu-central-1
-        count_tag:
-          Name: Demo
         instance_tags:
-          Name: web
+          Name: db
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/xvda
+        - device_name: /dev/sda1
           volume_type: gp2
           volume_size: 20
-      register: ec2
+          delete_on_termination: true
+      register: db
+
+    - name: Add db instances IPs to host group
+      add_host: hostname={{ item.public_ip }} groups=db
+      loop: "{{ db.instances }}"
 
     - name: Deploy backup servers
       ec2:
@@ -52,15 +58,75 @@
         instance_type: t2.micro
         image: ami-dd3c0f36
         wait: true
-        exact_count: 2
+        count: 1
         region: eu-central-1
-        count_tag:
-          Name: Demo
         instance_tags:
-          Name: web
+          Name: backup
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/xvda
+        - device_name: /dev/sda1
           volume_type: gp2
           volume_size: 20
-      register: ec2
+          delete_on_termination: true
+      register: backup
+
+    - name: Add backup instances IPs to host group
+      add_host: hostname={{ item.public_ip }} groups=backup
+      loop: "{{ backup.instances }}"
+
+
+    - name: Restart webservers
+      ec2_instance:
+        state: restarted
+        region: eu-central-1
+        instance_ids:
+          - "{{ item.id }}"
+      loop: "{{ web.instances }}"
+      
+    - name: Stop DB servers
+      ec2_instance:
+        state: stopped
+        region: eu-central-1
+        instance_ids:
+          - "{{ item.id }}"
+      loop: "{{ db.instances }}"
+      
+    - name: Stop backup server
+      ec2_instance:
+        state: stopped
+        region: eu-central-1
+        instance_ids:
+          - "{{ item.id }}"
+      loop: "{{ backup.instances }}"
+
+    - name: Detach test volume
+      ec2_vol:
+        region: eu-central-1
+        id: "{{ item.block_device_mapping['/dev/sda1'].volume_id }}"
+        instance: None
+      loop: "{{ backup.instances }}"
+
+    - name: Create snapshot from volume
+      ec2_snapshot:
+        region: eu-central-1
+        volume_id: "{{ item.block_device_mapping['/dev/sda1'].volume_id }}"
+      loop: "{{ backup.instances }}"
+      register: snap
+ 
+    - name: create bigger volume from snapshot
+      ec2_vol:
+        region: eu-central-1
+        snapshot: "{{ snap.results[0].snapshot_id }}"
+        volume_size: 30
+        instance: "{{ item.id }}"
+        device_name: /dev/sda1
+      ignore_errors: yes
+      loop: "{{ test.instances }}"
+
+    - name: deleta vms
+      ec2_instance:
+      state: absent
+      region: eu-central-1
+      filters:
+        instance-state-name: running
+
