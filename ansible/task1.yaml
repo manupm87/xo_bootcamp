@@ -121,7 +121,7 @@
         instance: "{{ item.id }}"
         device_name: /dev/sda1
       ignore_errors: yes
-      loop: "{{ test.instances }}"
+      loop: "{{ backup.instances }}"
 
     - name: deleta vms
       ec2_instance:
