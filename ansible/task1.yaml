@@ -14,16 +14,15 @@
         wait: true
         exact_count: 2
         region: eu-central-1
-        count_tag:
-          Name: Demo
         instance_tags:
           Name: web
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/xvda
-          volume_type: gp2
-          volume_size: 20
-      register: ec2
+          - device_name: /dev/xvda
+            volume_type: gp2
+            volume_size: 20
+            delete_on_termination: true
+      register: web
     
     - name: Deploy db servers
       ec2:
@@ -34,16 +33,15 @@
         wait: true
         exact_count: 2
         region: eu-central-1
-        count_tag:
-          Name: Demo
         instance_tags:
-          Name: web
+          Name: db
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/xvda
-          volume_type: gp2
-          volume_size: 20
-      register: ec2
+          - device_name: /dev/xvda
+            volume_type: gp2
+            volume_size: 20
+            delete_on_termination: true
+      register: db
 
     - name: Deploy backup servers
       ec2:
@@ -54,13 +52,12 @@
         wait: true
         exact_count: 2
         region: eu-central-1
-        count_tag:
-          Name: Demo
         instance_tags:
-          Name: web
+          Name: backup
         zone: eu-central-1a
         volumes:
-        - device_name: /dev/xvda
-          volume_type: gp2
-          volume_size: 20
-      register: ec2
+          - device_name: /dev/xvda
+            volume_type: gp2
+            volume_size: 20
+            delete_on_termination: true
+      register: backup
